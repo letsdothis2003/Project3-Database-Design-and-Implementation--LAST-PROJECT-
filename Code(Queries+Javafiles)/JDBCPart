@@ -1,0 +1,196 @@
+/* Group 4 10:45 section
+
+Memebers: Sayantan Saha, Fahim Tanvir, Esfar Rakin, Yousuf Ahmed, Justin Zara
+  This will make a connection from a java program to our sql server //
+*/
+
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.Vector;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+
+public class JDBCPart {
+
+    //Hardcoded what we need to log in to sql server
+    private static final String SERVER_NAME = "localhost";
+    private static final String PORT_NUMBER = "13001";
+    private static final String DATABASE_NAME = "XXXX";
+
+    public static void main(String[] args) {
+        // Start the application on the Event Dispatch Thread (EDT)
+        SwingUtilities.invokeLater(LoginFrame::new);
+    }
+
+    //Gonna connect from jdbc to our sql server through here
+    private static void runApplication(String username, String password) {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+
+            String connectionUrl = "jdbc:sqlserver://" + SERVER_NAME + ":" + PORT_NUMBER + ";" 
+                                 + "databaseName=" + DATABASE_NAME + ";"
+                                 + "user=" + username + ";password=" + password + ";"
+                                 + "encrypt=true;trustServerCertificate=true";
+
+            try (Connection con = DriverManager.getConnection(connectionUrl)) {
+                System.out.println("Connection established successfully.");
+                showWorkflowStepsAndDisplay(con);
+            }
+        }
+        catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null, "JDBC Driver not found. Ensure mssql-jdbc-12.6.1.jre11.jar is in classpath.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "SQL Connection Error:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "An unexpected error occurred:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    //Executes the procedure and extracts all data into memory before closing the connection.//
+    private static void showWorkflowStepsAndDisplay(Connection conn) throws SQLException {
+        System.out.println("Executing Process.ShowWorkflowSteps");
+        String sql = "{call Process.ShowWorkflowSteps()}"; 
+        //String abover here, connects us to this table on our DB on SQL server//
+
+        // Variables to hold extracted data
+        final Vector<Vector<Object>> data = new Vector<>();
+        final Vector<String> columnNames = new Vector<>();
+        String totalTime = null;
+
+        //added a try catch
+        try (CallableStatement cs = conn.prepareCall(sql)) {
+            
+            // 1. Get the main result set (WorkflowSteps)
+            if (cs.execute()) {
+                try (ResultSet rs = cs.getResultSet()) {
+                    // This method extracts all data while the ResultSet is open
+                    extractDataAndHeaders(rs, data, columnNames); 
+                }
+            }
+            
+            // 2. Get the second result (TotalTimeElapsed)
+            if (cs.getMoreResults()) {
+                 try (ResultSet rs2 = cs.getResultSet()) {
+                    if (rs2 != null && rs2.next()) {
+                        totalTime = rs2.getString(1);
+                    }
+                }
+            }
+        } // Connection/Statement close here. Data extraction is complete and we can go home
+
+        // Display the results outside the database resource block on the EDT
+        final String finalTotalTime = totalTime;
+        SwingUtilities.invokeLater(() -> {
+            if (!data.isEmpty()) {
+                displayTable(data, columnNames);
+            } else {
+                JOptionPane.showMessageDialog(null, "Workflow steps table is empty (No ETL was run).", "No Results", JOptionPane.INFORMATION_MESSAGE);
+            }
+            if (finalTotalTime != null) {
+                System.out.println("[Total Time Elapsed]: " + finalTotalTime);
+            }
+        });
+    }
+    
+    /**
+     * Extracts column names and all rows from a ResultSet into vectors.
+     */
+    private static void extractDataAndHeaders(ResultSet rs, Vector<Vector<Object>> data, Vector<String> columnNames) throws SQLException {
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        // Get column names
+        for (int i = 1; i <= columnCount; i++) {
+            columnNames.add(metaData.getColumnName(i));
+        }
+
+        // Get all rows
+        while (rs.next()) {
+            Vector<Object> row = new Vector<>();
+            for (int i = 1; i <= columnCount; i++) {
+                row.add(rs.getObject(i));
+            }
+            data.add(row);
+        }
+    }
+
+    /**
+     * Utility method to transfer extracted data into a JTable and display it.
+     */
+    private static void displayTable(Vector<Vector<Object>> data, Vector<String> columnNames) {
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        JTable table = new JTable(model);
+        
+        JFrame frame = new JFrame("Process.ShowWorkflowSteps Results");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new JScrollPane(table));
+        frame.setSize(1000, 400); 
+        frame.setLocationRelativeTo(null); 
+        frame.setVisible(true);
+        // This tag indicates the final successful GUI output.
+        
+    }
+    
+    // --- Custom Login GUI Class ---
+    private static class LoginFrame extends JFrame {
+        private final JTextField usernameField;
+        private final JPasswordField passwordField;
+
+        public LoginFrame() {
+            super("SQL Server Login: QueensClassSchedule");
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            
+            usernameField = new JTextField(15);
+            passwordField = new JPasswordField(15);
+            JButton loginButton = new JButton("Login");
+            
+            //I set up default values to make it easier
+            usernameField.setText("sa");
+            passwordField.setText("XXXX!");
+
+            JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+            panel.add(new JLabel("Username:"));
+            panel.add(usernameField);
+            panel.add(new JLabel("Password:"));
+            panel.add(passwordField);
+            panel.add(new JLabel()); 
+            panel.add(loginButton);
+            
+            add(panel, BorderLayout.CENTER);
+            setSize(400, 150);
+            setLocationRelativeTo(null); 
+            
+            loginButton.addActionListener(e -> attemptLogin());
+            usernameField.addActionListener(e -> attemptLogin());
+            passwordField.addActionListener(e -> attemptLogin());
+
+            setVisible(true);
+        }
+        
+        private void attemptLogin() {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            
+            dispose();
+            
+            runApplication(username, password);
+        }
+    }
+}
