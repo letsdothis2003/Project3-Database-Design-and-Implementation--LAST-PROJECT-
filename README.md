@@ -31,6 +31,6 @@ This is a presentation  for CSCI 331 which goes over how we made the database by
   
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-Walkthrough/Video links: https://www.youtube.com/watch?v=k3bxZoZVYmE
+Walkthrough/Video links
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-Our video presentation can be found here: https://www.youtube.com/watch?v=7jq9WUkIVzk
+Our video presentation can be found here: https://www.youtube.com/watch?v=k3bxZoZVYmE
