@@ -18,7 +18,7 @@ This is a presentation  for CSCI 331 which goes over how we made the database by
   - Introduction, ER DIagrams, UDTS, Schema, JCBD
 
 - **Sayantan**
-  -Tables part 1
+  - Tables part 1
 
 - **Justin**
   - Tables part 2
