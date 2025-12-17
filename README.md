@@ -6,7 +6,7 @@ Course: CSCI-331 DATABASE SYSTEMS
 
 We made QueensClassScheduleDB using tables, udts and other goodies. 
 
-Video link and other information can be found in the bottom. Our todolist is in timemanagement. Oru bak file, presentation pdf is outside. SQL and java code is in the code folder.
+Video link and other information can be found in the bottom. Our todolist is in timemanagement. Our bak file and presentation pdf is outside. SQL and java code is in the code folder along with the jar for JDBC(We didn't upload the entire Java project folder due to time and also fear or overwriting branches). 
 
 
 
